@@ -15,6 +15,7 @@ import gzip
 import datetime
 import time
 import math
+import os
 from urllib2 import Request
 from urllib2 import urlopen
 
@@ -198,7 +199,7 @@ def write_output(key_name, outstanding_requesters):
 
 def waf_get_ip_set(ip_set_id):
     response = None
-    waf = boto3.client('waf')
+    waf = boto3.client('waf-regional')
 
     for attempt in range(API_CALL_NUM_RETRIES):
         try:
@@ -219,7 +220,7 @@ def waf_update_ip_set(ip_set_id, updates_list):
     response = None
 
     if updates_list != []:
-        waf = boto3.client('waf')
+        waf = boto3.client('waf-regional')
         for attempt in range(API_CALL_NUM_RETRIES):
             try:
                 response = waf.update_ip_set(IPSetId=ip_set_id,
@@ -280,7 +281,7 @@ def update_waf_ip_set(outstanding_requesters, ip_set_id, ip_set_already_blocked)
             return
 
         updates_list = []
-        waf = boto3.client('waf')
+        waf = boto3.client('waf-regional')
 
         #--------------------------------------------------------------------------------------------------------------
         print("[update_waf_ip_set] \tTruncate [if necessary] list to respect WAF limit")
@@ -371,7 +372,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='AllowedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -398,7 +399,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='BlockedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -425,7 +426,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='BlockedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -452,7 +453,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='BlockedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -541,7 +542,7 @@ def lambda_handler(event, context):
 
             outputs = {}
             cf = boto3.client('cloudformation')
-            stack_name = context.invoked_function_arn.split(':')[6].rsplit('-', 2)[0]
+            stack_name = os.environ['StackName']
             cf_desc = cf.describe_stacks(StackName=stack_name)
             for e in cf_desc['Stacks'][0]['Outputs']:
                 outputs[e['OutputKey']] = e['OutputValue']

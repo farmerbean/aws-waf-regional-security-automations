@@ -15,6 +15,7 @@ import math
 import time
 import requests
 import datetime
+import os
 from urllib2 import Request
 from urllib2 import urlopen
 
@@ -30,7 +31,7 @@ API_CALL_NUM_RETRIES = 3
 #======================================================================================================================
 def update_web_acl(web_acl_id, updates):
     if updates != []:
-        waf = boto3.client('waf')
+        waf = boto3.client('waf-regional')
         for attempt in range(API_CALL_NUM_RETRIES):
             try:
                 response = waf.update_web_acl(
@@ -286,7 +287,7 @@ def delete_stack(stack_name, resource_properties):
     print("[update_stack] Start")
     updates = []
 
-    waf = boto3.client('waf')
+    waf = boto3.client('waf-regional')
 
     #--------------------------------------------------------------------------
     # Update S3 Event configuration
@@ -335,7 +336,7 @@ def can_delete_rule(stack_name, rule_id):
     result = False
     for attempt in range(API_CALL_NUM_RETRIES):
         try:
-            waf = boto3.client('waf')
+            waf = boto3.client('waf-regional')
             rule_detail = waf.get_rule(RuleId=rule_id)
             result = (stack_name == None or (rule_detail['Rule']['Name'].startswith(stack_name + " - ") and rule_detail['Rule']['Name'] != (stack_name + " - Whitelist Rule") ))
         except Exception, e:
@@ -365,7 +366,7 @@ def send_response(event, context, responseStatus, responseData):
 
         if req.status_code != 200:
             print(req.text)
-            raise Exception('Recieved non 200 response while sending response to CFN.')
+            raise Exception('Received non 200 response while sending response to CFN.')
         return
 
     except requests.exceptions.RequestException as e:
@@ -432,7 +433,7 @@ def lambda_handler(event, context):
     responseData = {}
     try:
         cf = boto3.client('cloudformation')
-        stack_name = context.invoked_function_arn.split(':')[6].rsplit('-', 2)[0]
+        stack_name = os.environ['StackName']
         cf_desc = cf.describe_stacks(StackName=stack_name)
 
         request_type = event['RequestType'].upper()

@@ -12,7 +12,7 @@ aws.config.update({
         base: 1000
     }
 });
-var waf = new aws.WAF();
+var waf = new aws.WAFRegional();
 var cloudwatch = new aws.CloudWatch();
 var cloudformation = new aws.CloudFormation();
 
@@ -259,15 +259,7 @@ function send_anonymous_usage_data(event, context) {
         // 0 - get reputation_ip_set_size
         function(callback) {
             // get stack name
-            var stack_name = context.functionName;
-            stack_name = stack_name.split("-");
-            stack_name.pop();
-            stack_name.pop();
-            if (stack_name.length > 1) {
-                stack_name = stack_name.join("-");
-            } else {
-                stack_name = stack_name[0];
-            }
+            var stack_name = process.env.StackName;
 
             cloudformation.describeStacks({
                 StackName: stack_name
@@ -319,7 +311,7 @@ function send_anonymous_usage_data(event, context) {
             var params = {
                 EndTime: end_time,
                 MetricName: 'AllowedRequests',
-                Namespace: 'WAF',
+                Namespace: 'WAF-Regional',
                 Period: 12 * 3600,
                 StartTime: start_time,
                 Statistics: ['Sum'],
@@ -353,7 +345,7 @@ function send_anonymous_usage_data(event, context) {
             var params = {
                 EndTime: end_time,
                 MetricName: 'BlockedRequests',
-                Namespace: 'WAF',
+                Namespace: 'WAF-Regional',
                 Period: 12 * 3600,
                 StartTime: start_time,
                 Statistics: ['Sum'],
@@ -387,7 +379,7 @@ function send_anonymous_usage_data(event, context) {
             var params = {
                 EndTime: end_time,
                 MetricName: 'SecurityAutomationsIPReputationListsRule1',
-                Namespace: 'WAF',
+                Namespace: 'WAF-Regional',
                 Period: 12 * 3600,
                 StartTime: start_time,
                 Statistics: ['Sum'],
@@ -421,7 +413,7 @@ function send_anonymous_usage_data(event, context) {
             var params = {
                 EndTime: end_time,
                 MetricName: 'SecurityAutomationsIPReputationListsRule2',
-                Namespace: 'WAF',
+                Namespace: 'WAF-Regional',
                 Period: 12 * 3600,
                 StartTime: start_time,
                 Statistics: ['Sum'],

@@ -13,6 +13,7 @@ import math
 import time
 import json
 import datetime
+import os
 from urllib2 import Request
 from urllib2 import urlopen
 
@@ -30,7 +31,7 @@ UUID = None
 # Auxiliary Functions
 #======================================================================================================================
 def waf_update_ip_set(ip_set_id, source_ip):
-    waf = boto3.client('waf')
+    waf = boto3.client('waf-regional')
     for attempt in range(API_CALL_NUM_RETRIES):
         try:
             response = waf.update_ip_set(IPSetId=ip_set_id,
@@ -54,7 +55,7 @@ def waf_update_ip_set(ip_set_id, source_ip):
 
 def waf_get_ip_set(ip_set_id):
     response = None
-    waf = boto3.client('waf')
+    waf = boto3.client('waf-regional')
 
     for attempt in range(API_CALL_NUM_RETRIES):
         try:
@@ -96,7 +97,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='AllowedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -123,7 +124,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='BlockedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -150,7 +151,7 @@ def send_anonymous_usage_data():
             cw = boto3.client('cloudwatch')
             response = cw.get_metric_statistics(
                 MetricName='BlockedRequests',
-                Namespace='WAF',
+                Namespace='WAF-Regional',
                 Statistics=['Sum'],
                 Period=12*3600,
                 StartTime=datetime.datetime.utcnow() - datetime.timedelta(seconds=12*3600),
@@ -224,7 +225,7 @@ def lambda_handler(event, context):
         if (IP_SET_ID_BAD_BOT == None or SEND_ANONYMOUS_USAGE_DATA == None or UUID == None):
             outputs = {}
             cf = boto3.client('cloudformation')
-            stack_name = context.invoked_function_arn.split(':')[6].rsplit('-', 2)[0]
+            stack_name = os.environ['StackName']
             cf_desc = cf.describe_stacks(StackName=stack_name)
             for e in cf_desc['Stacks'][0]['Outputs']:
                 outputs[e['OutputKey']] = e['OutputValue']
